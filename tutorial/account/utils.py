@@ -3,6 +3,8 @@ from django.core.mail import send_mail
 from tutorial.settings import EMAIL_HOST_USER
 from django.contrib.auth import get_user_model
 import secrets
+from django.template.loader import get_template
+from django.utils.html import strip_tags
 User = get_user_model()
 
 
@@ -22,10 +24,19 @@ def verify_otp(otp, email):
 
 
 def send_otp_email(otp, recipient_email):
+    context = {
+        "receiver_name": "test",
+        "otp": otp
+    }
+    template = get_template("email/otp_temp.html")
+    convert_to_html_content = template.render(context)
+    plain_message = strip_tags(convert_to_html_content)
+
     send_mail(
-        "Reset password",
-        f"The OTP for your reset password request: {otp}",
-        EMAIL_HOST_USER,
-        [recipient_email],
+        subject="Reset password",
+        message=plain_message,
+        from_email=EMAIL_HOST_USER,
+        recipient_list=[recipient_email],
+        html_message=convert_to_html_content,
         fail_silently=False
     )
