@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
+from .utils import generate_otp, verify_otp
 
 
 User = get_user_model()
@@ -48,24 +49,56 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField()
     confirm_new_password = serializers.CharField()
 
-    def check_old_password(pass1, pass2):
-        if pass1 == pass2:
-            return True
-
     def validate(self, data):
         if data['new_password'] != data['confirm_new_password']:
-            raise serializers.ValidationError("passwords do not match")
-        else:
-            user = self.context['request'].user
-            if not user.check_password(data['old_password']):
-                raise serializers.ValidationError("old password doesnot match")
-            return {
-                "user": user,
-                "new_password": data['new_password']
-            }
+            raise serializers.ValidationError(
+                {"confirm_new_password": "passwords do not match"})
+        return data
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("old password doesnot match")
+        return value
 
     def create(self, validated_data):
-        user = User.objects.get(email=validated_data["user"].email)
+        email = self.context['request'].user.email
+        user = User.objects.get(email=email)
         user.set_password(validated_data['new_password'])
+        user.save()
+        return user
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.CharField()
+
+    def validate_email(self, value):
+        try:
+            User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with email doesnot exist")
+        return value
+
+
+class ResetPasswordVerifySerializer(serializers.Serializer):
+    email = serializers.CharField()
+    otp = serializers.CharField(max_length=6)
+    password = serializers.CharField()
+    confirm_password = serializers.CharField()
+
+    def validate(self, data):
+        if not verify_otp(data['otp'], data['email']):
+            raise serializers.ValidationError("OTP doesnot match")
+        return data
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("passwords do not match")
+        return data
+
+    def create(self, validated_data):
+        email = validated_data['email']
+        user = User.objects.get(email=email)
+        user.set_password(validated_data['password'])
         user.save()
         return user
