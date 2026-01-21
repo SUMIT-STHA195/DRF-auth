@@ -39,8 +39,22 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'account'
+    'account',
+    'django_q'
 ]
+
+Q_CLUSTER = {
+    'name': 'DRF-OTP-Cluster',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,
+    'compress': True,
+    'save_limit': 1000,
+    'queue_limit': 500,
+    'fetch_limit': 100,
+    'max_attempts':3,
+    'orm': 'default',     
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

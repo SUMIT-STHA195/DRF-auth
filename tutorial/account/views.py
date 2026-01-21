@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView, UpdateAPIView, GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from django_q.tasks import async_task
 
 from .utils import generate_otp, send_otp_email
 from .serializers import ChangePasswordSerializer, LoginSerializer, PasswordResetRequestSerializer, RegistrationSerializer, ResetPasswordVerifySerializer, UserSerializer
@@ -78,7 +79,8 @@ class ResetPasswordRequest(GenericAPIView):
         print(f"OTP---------------{otp}")
         if otp:
             try:
-                send_otp_email(otp, validated_email)
+                async_task(send_otp_email, otp, validated_email)
+                # send_otp_email(otp, validated_email)
                 return Response({
                     "message": f"otp sent to {validated_email}"
                 })
@@ -92,15 +94,13 @@ class ResetPasswordRequest(GenericAPIView):
 
 
 class ResetPasswordVerify(UpdateAPIView):
-    serializer_class=ResetPasswordVerifySerializer
-    permission_classes=[AllowAny]
+    serializer_class = ResetPasswordVerifySerializer
+    permission_classes = [AllowAny]
 
-    def post(self,request):
-        serializer=self.get_serializer(data=request.data)
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({
             "message": "Password Changed Successfully"
         })
-
-    

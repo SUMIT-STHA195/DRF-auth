@@ -89,9 +89,6 @@ class ResetPasswordVerifySerializer(serializers.Serializer):
     def validate(self, data):
         if not verify_otp(data['otp'], data['email']):
             raise serializers.ValidationError("OTP doesnot match")
-        return data
-
-    def validate(self, data):
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("passwords do not match")
         return data

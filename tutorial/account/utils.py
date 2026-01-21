@@ -24,8 +24,9 @@ def verify_otp(otp, email):
 
 
 def send_otp_email(otp, recipient_email):
+    user = User.objects.get(email=recipient_email)
     context = {
-        "receiver_name": "test",
+        "receiver_name": f"{user.first_name} {user.last_name}",
         "otp": otp
     }
     template = get_template("email/otp_temp.html")
